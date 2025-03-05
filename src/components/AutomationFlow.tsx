@@ -14,6 +14,7 @@ import {
   MarkerType,
   NodeChange,
   Node,
+  getConnectedEdges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { initialNodes, initialEdges } from '@/data/initialElements';
@@ -36,21 +37,86 @@ export const AutomationFlow = () => {
   
   // Handle new connections between nodes
   const onConnect = useCallback((params: Connection) => {
+    // Find all existing edges connected to the source and target
+    const targetIncomingEdges = edges.filter(e => e.target === params.target);
+    const sourceOutgoingEdges = edges.filter(e => 
+      e.source === params.source && 
+      // For condition nodes, we need to check if the sourceHandle is the same
+      (params.sourceHandle ? e.sourceHandle === params.sourceHandle : true)
+    );
+    
+    // Get source node type to check if it's a condition node
+    const sourceNode = nodes.find(node => node.id === params.source);
+    const isConditionNode = sourceNode?.type === 'condition';
+    
+    // Rule 1: Node can only have one incoming connection
+    if (targetIncomingEdges.length > 0) {
+      toast.error("Target node already has an incoming connection", {
+        description: "Remove the existing connection first.",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    // Rule 2: Non-condition nodes can only have one outgoing connection
+    if (!isConditionNode && sourceOutgoingEdges.length > 0) {
+      toast.error("Source node already has an outgoing connection", {
+        description: "Remove the existing connection first.",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    // Rule 3: Condition nodes can have two outgoing connections (true/false)
+    if (isConditionNode) {
+      const existingTrueEdge = edges.find(e => e.source === params.source && e.sourceHandle === 'true');
+      const existingFalseEdge = edges.find(e => e.source === params.source && e.sourceHandle === 'false');
+      
+      // Check if we're trying to connect to a handle that already has a connection
+      if (params.sourceHandle === 'true' && existingTrueEdge) {
+        toast.error("True path already connected", {
+          description: "Remove the existing connection first.",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      if (params.sourceHandle === 'false' && existingFalseEdge) {
+        toast.error("False path already connected", {
+          description: "Remove the existing connection first.",
+          duration: 3000,
+        });
+        return;
+      }
+    }
+    
+    // If all checks pass, add the edge with appropriate styling
+    let edgeStyle = { stroke: '#A9ADC1', strokeWidth: 1.5 };
+    
+    // Use different colors for condition node edges
+    if (isConditionNode && params.sourceHandle) {
+      if (params.sourceHandle === 'true') {
+        edgeStyle = { stroke: '#22C55E', strokeWidth: 1.5 };
+      } else if (params.sourceHandle === 'false') {
+        edgeStyle = { stroke: '#EF4444', strokeWidth: 1.5 };
+      }
+    }
+    
     setEdges((eds) => 
       addEdge({
         ...params,
         type: 'smoothstep',
         animated: true,
-        style: { stroke: '#A9ADC1', strokeWidth: 1.5 },
+        style: edgeStyle,
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 15,
           height: 15,
-          color: '#A9ADC1',
+          color: edgeStyle.stroke,
         },
       }, eds)
     );
-  }, [setEdges]);
+  }, [edges, nodes, setEdges]);
 
   // Track selected elements
   const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
