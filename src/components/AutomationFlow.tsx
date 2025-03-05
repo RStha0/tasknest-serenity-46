@@ -13,12 +13,14 @@ import {
   Edge,
   MarkerType,
   NodeChange,
+  Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { initialNodes, initialEdges } from '@/data/initialElements';
 import TriggerNode from './nodes/TriggerNode';
 import ActionNode from './nodes/ActionNode';
 import ConditionNode from './nodes/ConditionNode';
+import { toast } from 'sonner';
 
 // Register custom node types
 const nodeTypes = {
@@ -30,6 +32,7 @@ const nodeTypes = {
 export const AutomationFlow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedElements, setSelectedElements] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   
   // Handle new connections between nodes
   const onConnect = useCallback((params: Connection) => {
@@ -48,6 +51,39 @@ export const AutomationFlow = () => {
       }, eds)
     );
   }, [setEdges]);
+
+  // Track selected elements
+  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
+    setSelectedElements({ nodes, edges });
+  }, []);
+
+  // Delete selected elements
+  const deleteSelectedElements = useCallback(() => {
+    const triggerNodesToDelete = selectedElements.nodes.filter(node => node.type === 'trigger');
+    
+    if (triggerNodesToDelete.length > 0) {
+      toast.error("Trigger nodes cannot be deleted", {
+        description: "Every workflow requires at least one trigger node.",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    if (selectedElements.nodes.length > 0 || selectedElements.edges.length > 0) {
+      setNodes((nds) => nds.filter((node) => !selectedElements.nodes.some(n => n.id === node.id)));
+      setEdges((eds) => eds.filter((edge) => !selectedElements.edges.some(e => e.id === edge.id)));
+      toast.success("Selected elements deleted");
+    }
+  }, [selectedElements, setNodes, setEdges]);
+
+  // Handle keyboard shortcuts
+  const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if ((event.key === 'Delete' || event.key === 'Backspace') && 
+        (selectedElements.nodes.length > 0 || selectedElements.edges.length > 0)) {
+      event.preventDefault();
+      deleteSelectedElements();
+    }
+  }, [selectedElements, deleteSelectedElements]);
 
   // Add a new node to the graph
   const addNode = (type: string) => {
@@ -85,7 +121,7 @@ export const AutomationFlow = () => {
   };
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" onKeyDown={onKeyDown} tabIndex={0}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -93,9 +129,11 @@ export const AutomationFlow = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        onSelectionChange={onSelectionChange}
         fitView
         attributionPosition="bottom-right"
         className="bg-[#f8f8f8]"
+        deleteKeyCode={[]} // Disable default delete behavior to handle it ourselves
       >
         <Background gap={24} size={1} />
         <Controls className="bg-white border border-gray-100 rounded-md shadow-sm" />
@@ -128,6 +166,14 @@ export const AutomationFlow = () => {
                 Condition
               </button>
             </div>
+            {selectedElements.nodes.length > 0 || selectedElements.edges.length > 0 ? (
+              <button
+                onClick={deleteSelectedElements}
+                className="mt-2 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm font-medium hover:bg-red-100 transition-colors"
+              >
+                Delete Selected
+              </button>
+            ) : null}
           </div>
         </Panel>
       </ReactFlow>
