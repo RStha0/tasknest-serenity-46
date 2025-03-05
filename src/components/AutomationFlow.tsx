@@ -12,6 +12,7 @@ import {
   Connection,
   Edge,
   MarkerType,
+  NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { initialNodes, initialEdges } from '@/data/initialElements';
@@ -54,10 +55,33 @@ export const AutomationFlow = () => {
       id: `node_${nodes.length + 1}`,
       type,
       position: { x: 250, y: nodes.length * 100 + 50 },
-      data: { label: type.charAt(0).toUpperCase() + type.slice(1) },
+      data: { 
+        label: type.charAt(0).toUpperCase() + type.slice(1),
+        onDataChange: (newData: any) => {
+          updateNodeData(newNode.id, newData);
+        }
+      },
     };
     
     setNodes((nds) => [...nds, newNode]);
+  };
+
+  // Update node data when changed by node components
+  const updateNodeData = (nodeId: string, newData: any) => {
+    setNodes((nds) => 
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...newData,
+              onDataChange: node.data.onDataChange,
+            },
+          };
+        }
+        return node;
+      })
+    );
   };
 
   return (

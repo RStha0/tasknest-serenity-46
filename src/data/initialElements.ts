@@ -6,7 +6,13 @@ export const initialNodes: Node[] = [
     id: '1',
     type: 'trigger',
     position: { x: 250, y: 50 },
-    data: { label: 'Project Created' },
+    data: { 
+      label: 'Task Created',
+      triggerType: 'task-created',
+      onDataChange: (newData: any) => {
+        console.log('Trigger data updated:', newData);
+      }
+    },
   },
   {
     id: '2',
