@@ -100,6 +100,11 @@ export const VariableSelector = ({
     }
   };
 
+  // Prevent scroll events from propagating to the ReactFlow canvas
+  const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
+
   if (!isOpen) return null;
   
   const handleVariableSelect = (variable: string) => {
@@ -121,6 +126,7 @@ export const VariableSelector = ({
       ref={containerRef}
       className="bg-white rounded-lg shadow-lg border border-gray-200 w-[300px]"
       style={style}
+      onWheel={handleWheel}
     >
       <div className="p-2 border-b border-gray-100">
         <input

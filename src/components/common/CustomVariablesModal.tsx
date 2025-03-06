@@ -17,8 +17,8 @@ import { Input } from "@/components/ui/input";
 import { 
   getAvailableVariables, 
   getCustomVariables, 
-  saveCustomVariable, 
-  deleteCustomVariable,
+  addCustomVariable as saveCustomVariable, 
+  removeCustomVariable as deleteCustomVariable,
   Variable
 } from '@/utils/formUtils';
 import { cn } from '@/lib/utils';
@@ -89,6 +89,11 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
     setCategoryFilter('all');
   };
 
+  // Handle wheel events to prevent propagation to ReactFlow
+  const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
+
   const handleSaveVariable = () => {
     if (!newVarName.trim()) {
       toast.error("Variable name is required");
@@ -101,7 +106,7 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
     }
 
     try {
-      saveCustomVariable(newVarName, newVarValue, newVarType, editingIndex);
+      saveCustomVariable(newVarName, newVarValue, newVarType, editingIndex !== null ? editingIndex : undefined);
       
       // Refresh custom variables
       const customVars = getCustomVariables();
@@ -192,7 +197,10 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-white border-0 shadow-lg rounded-xl">
+      <DialogContent 
+        className="sm:max-w-[600px] p-0 overflow-hidden bg-white border-0 shadow-lg rounded-xl" 
+        onWheel={handleWheel}
+      >
         <DialogHeader className="p-6 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
           <DialogTitle className="flex items-center gap-2 text-indigo-700">
             <LucideVariable className="h-5 w-5" />
