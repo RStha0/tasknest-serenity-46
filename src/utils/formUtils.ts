@@ -33,12 +33,83 @@ export const validateExpression = (expression: string): boolean => {
 interface Variable {
   name: string;
   description: string;
-  type?: string; // Added type field to track data type
+  type?: string;
+  value?: string; // Added value field for custom variables
 }
+
+// Storage key for custom variables
+const CUSTOM_VARIABLES_STORAGE_KEY = 'workflow_custom_variables';
+
+// Load custom variables from localStorage
+const loadCustomVariablesFromStorage = (): Variable[] => {
+  try {
+    const storedVars = localStorage.getItem(CUSTOM_VARIABLES_STORAGE_KEY);
+    return storedVars ? JSON.parse(storedVars) : [];
+  } catch (error) {
+    console.error('Error loading custom variables from storage:', error);
+    return [];
+  }
+};
+
+// Save custom variables to localStorage
+const saveCustomVariablesToStorage = (variables: Variable[]) => {
+  try {
+    localStorage.setItem(CUSTOM_VARIABLES_STORAGE_KEY, JSON.stringify(variables));
+  } catch (error) {
+    console.error('Error saving custom variables to storage:', error);
+  }
+};
+
+// Get all custom variables
+export const getCustomVariables = (): Variable[] => {
+  return loadCustomVariablesFromStorage();
+};
+
+// Add a new custom variable
+export const addCustomVariable = (variable: Variable): void => {
+  if (!variable.name.startsWith('variables.')) {
+    throw new Error('Custom variable names must start with "variables."');
+  }
+  
+  const customVars = loadCustomVariablesFromStorage();
+  
+  // Check if variable already exists
+  if (customVars.some(v => v.name === variable.name)) {
+    throw new Error(`Variable ${variable.name} already exists`);
+  }
+  
+  customVars.push(variable);
+  saveCustomVariablesToStorage(customVars);
+};
+
+// Update an existing custom variable
+export const updateCustomVariable = (variableName: string, updatedVariable: Variable): void => {
+  const customVars = loadCustomVariablesFromStorage();
+  const index = customVars.findIndex(v => v.name === variableName);
+  
+  if (index === -1) {
+    throw new Error(`Variable ${variableName} not found`);
+  }
+  
+  customVars[index] = updatedVariable;
+  saveCustomVariablesToStorage(customVars);
+};
+
+// Remove a custom variable
+export const removeCustomVariable = (variableName: string): void => {
+  const customVars = loadCustomVariablesFromStorage();
+  const filteredVars = customVars.filter(v => v.name !== variableName);
+  
+  if (filteredVars.length === customVars.length) {
+    throw new Error(`Variable ${variableName} not found`);
+  }
+  
+  saveCustomVariablesToStorage(filteredVars);
+};
 
 // Available variables in the system for autocomplete
 export const getAvailableVariables = (): Variable[] => {
-  return [
+  const systemVariables = [
     // Task variables
     { name: "task.title", description: "The title of the task", type: "text" },
     { name: "task.description", description: "The description of the task", type: "text" },
@@ -65,12 +136,10 @@ export const getAvailableVariables = (): Variable[] => {
     { name: "trigger.user.email", description: "Email of the user who triggered the workflow", type: "email" },
     { name: "trigger.user.role", description: "Role of the user who triggered the workflow", type: "text" },
     { name: "trigger.timestamp", description: "When the workflow was triggered", type: "date" },
-    
-    // Custom variables (example)
-    { name: "variables.approval_threshold", description: "Custom approval threshold", type: "number" },
-    { name: "variables.team_capacity", description: "Current team capacity", type: "number" },
-    { name: "variables.priority_factor", description: "Custom priority calculation factor", type: "number" },
   ];
+  
+  // Combine system variables with custom variables
+  return [...systemVariables, ...getCustomVariables()];
 };
 
 // Get the type of a variable given its name

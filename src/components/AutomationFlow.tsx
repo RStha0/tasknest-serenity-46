@@ -22,6 +22,8 @@ import TriggerNode from './nodes/TriggerNode';
 import ActionNode from './nodes/ActionNode';
 import ConditionNode from './nodes/ConditionNode';
 import { toast } from 'sonner';
+import CustomVariablesModal from './common/CustomVariablesModal';
+import { LucideVariable } from 'lucide-react';
 
 // Register custom node types
 const nodeTypes = {
@@ -34,6 +36,7 @@ export const AutomationFlow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedElements, setSelectedElements] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
+  const [customVariablesModalOpen, setCustomVariablesModalOpen] = useState(false);
   
   // Handle new connections between nodes
   const onConnect = useCallback((params: Connection) => {
@@ -232,6 +235,15 @@ export const AutomationFlow = () => {
                 Condition
               </button>
             </div>
+            
+            <button
+              onClick={() => setCustomVariablesModalOpen(true)}
+              className="px-3 py-2 flex items-center gap-1.5 bg-[#F0F9FF] border border-[#B8E3FF] text-[#0089D6] rounded-md text-sm font-medium hover:bg-[#B8E3FF] transition-colors mt-2"
+            >
+              <LucideVariable size={14} />
+              <span>Custom Variables</span>
+            </button>
+            
             {selectedElements.nodes.length > 0 || selectedElements.edges.length > 0 ? (
               <button
                 onClick={deleteSelectedElements}
@@ -243,6 +255,12 @@ export const AutomationFlow = () => {
           </div>
         </Panel>
       </ReactFlow>
+      
+      {/* Custom Variables Modal */}
+      <CustomVariablesModal 
+        open={customVariablesModalOpen}
+        onOpenChange={setCustomVariablesModalOpen}
+      />
     </div>
   );
 };
