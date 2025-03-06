@@ -14,7 +14,13 @@ import {
   LucideFlame 
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import { getAvailableVariables, getCustomVariables, saveCustomVariable, deleteCustomVariable } from '@/utils/formUtils';
+import { 
+  getAvailableVariables, 
+  getCustomVariables, 
+  saveCustomVariable, 
+  deleteCustomVariable,
+  Variable
+} from '@/utils/formUtils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -23,10 +29,22 @@ interface CustomVariablesModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type CustomVariableType = {
+  name: string;
+  value: string;
+  type: string;
+};
+
+type SystemVariableType = {
+  name: string;
+  description: string;
+  type: string;
+};
+
 const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps) => {
   const [activeTab, setActiveTab] = useState("custom");
-  const [customVariables, setCustomVariables] = useState<Array<{ name: string; value: string; type: string }>>([]);
-  const [systemVariables, setSystemVariables] = useState<Array<{ name: string; description: string; type: string }>>([]);
+  const [customVariables, setCustomVariables] = useState<CustomVariableType[]>([]);
+  const [systemVariables, setSystemVariables] = useState<SystemVariableType[]>([]);
   const [newVarName, setNewVarName] = useState('');
   const [newVarValue, setNewVarValue] = useState('');
   const [newVarType, setNewVarType] = useState('text');
@@ -37,8 +55,21 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
   // Load variables
   useEffect(() => {
     if (open) {
-      setCustomVariables(getCustomVariables());
-      setSystemVariables(getAvailableVariables());
+      const customVars = getCustomVariables();
+      const customVarsFormatted: CustomVariableType[] = customVars.map(v => ({
+        name: v.name,
+        value: v.value || '',
+        type: v.type || 'text'
+      }));
+      setCustomVariables(customVarsFormatted);
+      
+      const sysVars = getAvailableVariables().filter(v => !v.name.startsWith('variables.'));
+      const systemVarsFormatted: SystemVariableType[] = sysVars.map(v => ({
+        name: v.name,
+        description: v.description || '',
+        type: v.type || 'text'
+      }));
+      setSystemVariables(systemVarsFormatted);
     }
   }, [open]);
 
@@ -69,12 +100,18 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
       return;
     }
 
-    // Ensure name starts with variables. prefix
-    const fullVarName = newVarName.startsWith('variables.') ? newVarName : `variables.${newVarName}`;
-
     try {
-      saveCustomVariable(fullVarName, newVarValue, newVarType, editingIndex);
-      setCustomVariables(getCustomVariables());
+      saveCustomVariable(newVarName, newVarValue, newVarType, editingIndex);
+      
+      // Refresh custom variables
+      const customVars = getCustomVariables();
+      const customVarsFormatted: CustomVariableType[] = customVars.map(v => ({
+        name: v.name,
+        value: v.value || '',
+        type: v.type || 'text'
+      }));
+      setCustomVariables(customVarsFormatted);
+      
       resetForm();
       toast.success(editingIndex !== null ? "Variable updated" : "Variable created");
     } catch (error) {
@@ -93,7 +130,16 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
   const handleDeleteVariable = (index: number) => {
     try {
       deleteCustomVariable(index);
-      setCustomVariables(getCustomVariables());
+      
+      // Refresh custom variables
+      const customVars = getCustomVariables();
+      const customVarsFormatted: CustomVariableType[] = customVars.map(v => ({
+        name: v.name,
+        value: v.value || '',
+        type: v.type || 'text'
+      }));
+      setCustomVariables(customVarsFormatted);
+      
       resetForm();
       toast.success("Variable deleted");
     } catch (error) {

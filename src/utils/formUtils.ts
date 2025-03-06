@@ -30,9 +30,9 @@ export const validateExpression = (expression: string): boolean => {
 };
 
 // Define variable types for compatibility checking
-interface Variable {
+export interface Variable {
   name: string;
-  description: string;
+  description?: string;
   type?: string;
   value?: string; // Added value field for custom variables
 }
@@ -79,6 +79,49 @@ export const addCustomVariable = (variable: Variable): void => {
   }
   
   customVars.push(variable);
+  saveCustomVariablesToStorage(customVars);
+};
+
+// Save or update a custom variable
+export const saveCustomVariable = (name: string, value: string, type: string, editIndex: number | null): void => {
+  const fullName = name.startsWith('variables.') ? name : `variables.${name}`;
+  const customVars = loadCustomVariablesFromStorage();
+  
+  if (editIndex !== null) {
+    // Update existing variable
+    customVars[editIndex] = { 
+      name: fullName, 
+      value, 
+      type,
+      description: `Custom variable: ${name}`
+    };
+  } else {
+    // Check if variable already exists
+    if (customVars.some(v => v.name === fullName)) {
+      throw new Error(`Variable ${fullName} already exists`);
+    }
+    
+    // Add new variable
+    customVars.push({ 
+      name: fullName, 
+      value, 
+      type,
+      description: `Custom variable: ${name}`
+    });
+  }
+  
+  saveCustomVariablesToStorage(customVars);
+};
+
+// Delete a custom variable by index
+export const deleteCustomVariable = (index: number): void => {
+  const customVars = loadCustomVariablesFromStorage();
+  
+  if (index < 0 || index >= customVars.length) {
+    throw new Error(`Invalid variable index: ${index}`);
+  }
+  
+  customVars.splice(index, 1);
   saveCustomVariablesToStorage(customVars);
 };
 
