@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { getAvailableVariables, getCompatibleVariables, getVariableType } from "@/utils/formUtils";
 import { cn } from "@/lib/utils";
@@ -29,25 +28,21 @@ export const VariableSelector = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Update local search term when searchTerm prop changes
   useEffect(() => {
     setLocalSearchTerm(searchTerm);
   }, [searchTerm]);
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen]);
   
-  // Filter variables based on search term, type, and compatibility
   useEffect(() => {
     let filteredVars = compatibleWith 
       ? getCompatibleVariables(compatibleWith) 
       : getAvailableVariables();
     
-    // Apply type filter if provided
     if (filterType) {
       if (filterType === 'user') {
         filteredVars = filteredVars.filter(v => 
@@ -62,7 +57,6 @@ export const VariableSelector = ({
       }
     }
     
-    // Apply search term filter
     const searchString = localSearchTerm.trim().toLowerCase();
     if (searchString !== "") {
       filteredVars = filteredVars.filter(v => 
@@ -74,7 +68,6 @@ export const VariableSelector = ({
     setVariables(filteredVars);
   }, [localSearchTerm, filterType, compatibleWith]);
   
-  // Handle click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -91,7 +84,6 @@ export const VariableSelector = ({
     };
   }, [isOpen, onClose]);
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalSearchTerm(newValue);
@@ -100,9 +92,9 @@ export const VariableSelector = ({
     }
   };
 
-  // Prevent scroll events from propagating to the ReactFlow canvas
   const handleWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
+    e.preventDefault();
   };
 
   if (!isOpen) return null;
@@ -112,7 +104,6 @@ export const VariableSelector = ({
     onClose();
   };
 
-  // Position the selector directly below the input field
   const style = {
     position: 'absolute',
     left: `0px`,
@@ -180,7 +171,10 @@ export const VariableSelector = ({
         </div>
       )}
       
-      <div className="max-h-[300px] overflow-y-auto p-1">
+      <div 
+        className="max-h-[300px] overflow-y-auto p-1"
+        onWheel={handleWheel}
+      >
         {variables.length === 0 ? (
           <div className="py-3 px-4 text-sm text-gray-500 text-center">
             No variables match your search
