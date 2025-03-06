@@ -133,6 +133,15 @@ export const AutomationFlow = () => {
   }, [selectedElements, setNodes, setEdges]);
 
   const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+    // Don't trigger deletion if the user is typing in an input, textarea, or select element
+    if (
+      event.target instanceof HTMLInputElement || 
+      event.target instanceof HTMLTextAreaElement || 
+      event.target instanceof HTMLSelectElement
+    ) {
+      return;
+    }
+    
     if ((event.key === 'Delete' || event.key === 'Backspace') && 
         (selectedElements.nodes.length > 0 || selectedElements.edges.length > 0)) {
       event.preventDefault();
