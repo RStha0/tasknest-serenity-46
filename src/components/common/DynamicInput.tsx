@@ -29,6 +29,7 @@ const DynamicInput = ({
 }: DynamicInputProps) => {
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0 });
+  const [searchTerm, setSearchTerm] = useState("");
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   
@@ -61,6 +62,34 @@ const DynamicInput = ({
     } else {
       // Just append the variable
       onChange(value + " " + variable);
+    }
+    setShowVariableSelector(false);
+  };
+  
+  // Show variable selector when input is focused and hide when blurred
+  const handleInputFocus = () => {
+    if (supportExpressions && inputRef.current) {
+      const inputRect = inputRef.current.getBoundingClientRect();
+      setAnchorPosition({ 
+        x: inputRect.left, 
+        y: inputRect.bottom + window.scrollY
+      });
+      setShowVariableSelector(true);
+      
+      // Set initial search term from current input value
+      if (inputType !== "select" && value && !containsExpression(value)) {
+        setSearchTerm(value);
+      } else {
+        setSearchTerm("");
+      }
+    }
+  };
+  
+  // Update search term as user types
+  const handleInputChange = (newValue: string) => {
+    onChange(newValue);
+    if (supportExpressions && !containsExpression(newValue)) {
+      setSearchTerm(newValue);
     }
   };
   
@@ -101,7 +130,8 @@ const DynamicInput = ({
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder={placeholder}
             className={`w-full bg-white border rounded-md py-1.5 px-3 text-sm ${
               isExpression 
@@ -117,7 +147,8 @@ const DynamicInput = ({
             ref={inputRef as React.RefObject<HTMLInputElement>}
             type="text"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={handleInputFocus}
             placeholder={placeholder}
             className={`w-full bg-white border rounded-md py-1.5 px-3 text-sm ${
               isExpression 
@@ -157,6 +188,8 @@ const DynamicInput = ({
         onClose={() => setShowVariableSelector(false)}
         onSelect={handleSelectVariable}
         anchorPosition={anchorPosition}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
       />
     </div>
   );

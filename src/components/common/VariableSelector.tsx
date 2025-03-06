@@ -9,6 +9,8 @@ interface VariableSelectorProps {
   onClose: () => void;
   anchorPosition?: { x: number; y: number };
   filterType?: string;
+  searchTerm?: string;
+  setSearchTerm?: (term: string) => void;
 }
 
 export const VariableSelector = ({ 
@@ -16,13 +18,20 @@ export const VariableSelector = ({
   isOpen, 
   onClose,
   anchorPosition = { x: 0, y: 0 },
-  filterType = ""
+  filterType = "",
+  searchTerm = "",
+  setSearchTerm
 }: VariableSelectorProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [variables, setVariables] = useState(getAvailableVariables());
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Update local search term when searchTerm prop changes
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
   // Focus input when opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -50,15 +59,16 @@ export const VariableSelector = ({
     }
     
     // Apply search term filter
-    if (searchTerm.trim() !== "") {
+    const searchString = localSearchTerm.trim().toLowerCase();
+    if (searchString !== "") {
       filteredVars = filteredVars.filter(v => 
-        v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        v.description.toLowerCase().includes(searchTerm.toLowerCase())
+        v.name.toLowerCase().includes(searchString) || 
+        v.description.toLowerCase().includes(searchString)
       );
     }
     
     setVariables(filteredVars);
-  }, [searchTerm, filterType]);
+  }, [localSearchTerm, filterType]);
   
   // Handle click outside to close
   useEffect(() => {
@@ -76,6 +86,15 @@ export const VariableSelector = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalSearchTerm(newValue);
+    if (setSearchTerm) {
+      setSearchTerm(newValue);
+    }
+  };
 
   if (!isOpen) return null;
   
@@ -105,8 +124,8 @@ export const VariableSelector = ({
           type="text"
           placeholder="Search variables..."
           className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={localSearchTerm}
+          onChange={handleSearchChange}
         />
       </div>
       
@@ -114,31 +133,31 @@ export const VariableSelector = ({
         <div className="flex flex-wrap gap-1 p-2 border-b border-gray-100">
           <button 
             className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
-            onClick={() => setSearchTerm("task")}
+            onClick={() => setLocalSearchTerm("task")}
           >
             Task
           </button>
           <button 
             className="px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100"
-            onClick={() => setSearchTerm("user")}
+            onClick={() => setLocalSearchTerm("user")}
           >
             User
           </button>
           <button 
             className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded-md hover:bg-green-100"
-            onClick={() => setSearchTerm("project")}
+            onClick={() => setLocalSearchTerm("project")}
           >
             Project
           </button>
           <button 
             className="px-2 py-1 text-xs bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100"
-            onClick={() => setSearchTerm("trigger")}
+            onClick={() => setLocalSearchTerm("trigger")}
           >
             Trigger
           </button>
           <button 
             className="px-2 py-1 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100"
-            onClick={() => setSearchTerm("variables")}
+            onClick={() => setLocalSearchTerm("variables")}
           >
             Custom
           </button>
