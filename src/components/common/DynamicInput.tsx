@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { LucideVariable } from "lucide-react";
 import { containsExpression, validateExpression } from "@/utils/formUtils";
 import VariableSelector from "./VariableSelector";
@@ -30,14 +30,17 @@ const DynamicInput = ({
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0 });
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   
   const handleVariableButtonClick = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setAnchorPosition({ 
-      x: rect.left, 
-      y: rect.bottom + 5
-    });
-    setShowVariableSelector(!showVariableSelector);
+    if (inputRef.current) {
+      const inputRect = inputRef.current.getBoundingClientRect();
+      setAnchorPosition({ 
+        x: inputRect.left, 
+        y: inputRect.bottom + window.scrollY
+      });
+      setShowVariableSelector(!showVariableSelector);
+    }
   };
   
   const handleSelectVariable = (variable: string) => {
@@ -128,6 +131,7 @@ const DynamicInput = ({
         
         {supportExpressions && (
           <button
+            ref={buttonRef}
             type="button"
             className={`absolute right-2 p-1 rounded-md hover:bg-gray-100 ${
               isExpression ? 'text-blue-600' : 'text-gray-400'

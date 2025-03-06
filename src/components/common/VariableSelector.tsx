@@ -84,10 +84,12 @@ export const VariableSelector = ({
     onClose();
   };
 
+  // Position the selector directly below the input field
   const style = {
-    position: 'fixed',
-    left: `${anchorPosition.x}px`,
-    top: `${anchorPosition.y}px`,
+    position: 'absolute',
+    left: `0px`,
+    top: `calc(100% + 5px)`,
+    width: '300px',
     zIndex: 1000,
   } as React.CSSProperties;
 
