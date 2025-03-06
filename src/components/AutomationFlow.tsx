@@ -221,7 +221,7 @@ export const AutomationFlow = () => {
             
             <button
               onClick={() => setCustomVariablesModalOpen(true)}
-              className="px-3 py-2 flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 text-indigo-600 rounded-md text-sm font-medium hover:bg-gradient-to-r hover:from-indigo-100 hover:to-blue-100 transition-colors mt-2 shadow-sm"
+              className="px-3 py-2 flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 text-indigo-600 rounded-md text-sm font-medium hover:from-indigo-100 hover:to-blue-100 transition-colors mt-2 shadow-sm"
             >
               <LucideVariable size={14} />
               <span>Variables Library</span>
