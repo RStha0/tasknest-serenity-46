@@ -3,19 +3,21 @@ import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucideGitBranch, LucideLoader2 } from 'lucide-react';
 import DynamicInput from '../common/DynamicInput';
-import { fetchOptionsForField, validateField } from '@/utils/formUtils';
+import { fetchOptionsForField, validateField, getAvailableVariables } from '@/utils/formUtils';
 
 const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => {
   // State for the condition configuration
-  const [conditionField, setConditionField] = useState(data.conditionField || 'project_priority');
+  const [conditionField, setConditionField] = useState(data.conditionField || 'variable');
+  const [leftOperand, setLeftOperand] = useState(data.leftOperand || '');
   const [operator, setOperator] = useState(data.operator || 'equals');
-  const [conditionValue, setConditionValue] = useState(data.conditionValue || '');
+  const [rightOperand, setRightOperand] = useState(data.rightOperand || '');
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [fieldOptions, setFieldOptions] = useState<Array<{value: string, label: string}>>([]);
   
   // Available condition fields
   const conditionFields = [
+    { value: 'variable', label: 'Compare variables' },
     { value: 'project_priority', label: 'Project priority' },
     { value: 'task_status', label: 'Task status' },
     { value: 'task_assignee', label: 'Task assignee' },
@@ -40,6 +42,8 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
     return [
       { value: 'equals', label: 'Equals' },
       { value: 'not_equals', label: 'Does not equal' },
+      { value: 'greater_than', label: 'Greater than' },
+      { value: 'less_than', label: 'Less than' },
       { value: 'contains', label: 'Contains' },
       { value: 'starts_with', label: 'Starts with' },
       { value: 'ends_with', label: 'Ends with' }
@@ -49,7 +53,7 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
   // Load field options
   useEffect(() => {
     const loadOptions = async () => {
-      if (conditionField === 'custom_expression') return;
+      if (conditionField === 'custom_expression' || conditionField === 'variable') return;
       
       setIsLoadingOptions(true);
       try {
@@ -92,19 +96,23 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
         ...data,
         conditionField,
         operator,
-        conditionValue
+        leftOperand,
+        rightOperand
       });
     }
-  }, [conditionField, operator, conditionValue, data]);
+  }, [conditionField, operator, leftOperand, rightOperand, data]);
   
   // Validate the condition
   const validateCondition = () => {
     const newErrors: Record<string, string | null> = {};
     
     if (conditionField === 'custom_expression') {
-      newErrors.conditionValue = validateField('text', conditionValue);
+      newErrors.rightOperand = validateField('text', rightOperand);
+    } else if (conditionField === 'variable') {
+      newErrors.leftOperand = validateField('text', leftOperand);
+      newErrors.rightOperand = validateField('text', rightOperand);
     } else {
-      newErrors.conditionValue = validateField('text', conditionValue);
+      newErrors.rightOperand = validateField('text', rightOperand);
     }
     
     setErrors(newErrors);
@@ -114,7 +122,8 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
   // Handle field change
   const handleFieldChange = (field: string) => {
     setConditionField(field);
-    setConditionValue('');
+    setRightOperand('');
+    setLeftOperand(field === 'variable' ? '' : `{{${field}}}`);
     setOperator(field === 'custom_expression' ? 'evaluates_to' : 'equals');
     setErrors({});
   };
@@ -132,7 +141,7 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
       
       <div className="bg-[#F9FAFB] rounded-lg p-3 mb-3 space-y-3">
         <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 block">If</label>
+          <label className="text-xs font-medium text-gray-500 mb-1 block">Condition Type</label>
           <select 
             className="w-full bg-white border border-gray-200 rounded-md py-1.5 px-2 text-sm"
             value={conditionField}
@@ -147,13 +156,48 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
         {conditionField === 'custom_expression' ? (
           <DynamicInput
             label="Expression"
-            value={conditionValue}
-            onChange={setConditionValue}
+            value={rightOperand}
+            onChange={setRightOperand}
             inputType="textarea"
-            error={errors.conditionValue}
+            error={errors.rightOperand}
             supportExpressions={true}
             placeholder="Enter expression, e.g. {{task.priority}} == 'High'"
           />
+        ) : conditionField === 'variable' ? (
+          <>
+            <DynamicInput
+              label="Left side (variable to check)"
+              value={leftOperand}
+              onChange={setLeftOperand}
+              inputType="text"
+              error={errors.leftOperand}
+              supportExpressions={true}
+              placeholder="Select or enter a variable"
+            />
+            
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Operator</label>
+              <select 
+                className="w-full bg-white border border-gray-200 rounded-md py-1.5 px-2 text-sm"
+                value={operator}
+                onChange={(e) => setOperator(e.target.value)}
+              >
+                {operators.map(op => (
+                  <option key={op.value} value={op.value}>{op.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            <DynamicInput
+              label="Right side (value to compare against)"
+              value={rightOperand}
+              onChange={setRightOperand}
+              inputType="text"
+              error={errors.rightOperand}
+              supportExpressions={true}
+              placeholder="Static value or variable"
+            />
+          </>
         ) : (
           <>
             <div>
@@ -177,11 +221,11 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
             ) : (
               <DynamicInput
                 label="Value"
-                value={conditionValue}
-                onChange={setConditionValue}
+                value={rightOperand}
+                onChange={setRightOperand}
                 inputType={fieldOptions.length > 0 ? "select" : "text"}
                 options={fieldOptions}
-                error={errors.conditionValue}
+                error={errors.rightOperand}
                 supportExpressions={true}
               />
             )}

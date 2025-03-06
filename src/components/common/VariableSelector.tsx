@@ -8,13 +8,15 @@ interface VariableSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   anchorPosition?: { x: number; y: number };
+  filterType?: string;
 }
 
 export const VariableSelector = ({ 
   onSelect, 
   isOpen, 
   onClose,
-  anchorPosition = { x: 0, y: 0 }
+  anchorPosition = { x: 0, y: 0 },
+  filterType = ""
 }: VariableSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [variables, setVariables] = useState(getAvailableVariables());
@@ -28,18 +30,35 @@ export const VariableSelector = ({
     }
   }, [isOpen]);
   
-  // Filter variables based on search term
+  // Filter variables based on search term and type
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setVariables(getAvailableVariables());
-    } else {
-      const filtered = getAvailableVariables().filter(v => 
+    let filteredVars = getAvailableVariables();
+    
+    // Apply type filter if provided
+    if (filterType) {
+      if (filterType === 'user') {
+        filteredVars = filteredVars.filter(v => 
+          v.name.startsWith('current_user.') || v.name.startsWith('trigger.user.')
+        );
+      } else if (filterType === 'task') {
+        filteredVars = filteredVars.filter(v => v.name.startsWith('task.'));
+      } else if (filterType === 'project') {
+        filteredVars = filteredVars.filter(v => v.name.startsWith('project.'));
+      } else if (filterType === 'custom') {
+        filteredVars = filteredVars.filter(v => v.name.startsWith('variables.'));
+      }
+    }
+    
+    // Apply search term filter
+    if (searchTerm.trim() !== "") {
+      filteredVars = filteredVars.filter(v => 
         v.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         v.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setVariables(filtered);
     }
-  }, [searchTerm]);
+    
+    setVariables(filteredVars);
+  }, [searchTerm, filterType]);
   
   // Handle click outside to close
   useEffect(() => {
@@ -88,6 +107,42 @@ export const VariableSelector = ({
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
+      
+      {filterType === "" && (
+        <div className="flex flex-wrap gap-1 p-2 border-b border-gray-100">
+          <button 
+            className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
+            onClick={() => setSearchTerm("task")}
+          >
+            Task
+          </button>
+          <button 
+            className="px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100"
+            onClick={() => setSearchTerm("user")}
+          >
+            User
+          </button>
+          <button 
+            className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded-md hover:bg-green-100"
+            onClick={() => setSearchTerm("project")}
+          >
+            Project
+          </button>
+          <button 
+            className="px-2 py-1 text-xs bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100"
+            onClick={() => setSearchTerm("trigger")}
+          >
+            Trigger
+          </button>
+          <button 
+            className="px-2 py-1 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100"
+            onClick={() => setSearchTerm("variables")}
+          >
+            Custom
+          </button>
+        </div>
+      )}
+      
       <div className="max-h-[300px] overflow-y-auto p-1">
         {variables.length === 0 ? (
           <div className="py-3 px-4 text-sm text-gray-500 text-center">
@@ -100,7 +155,15 @@ export const VariableSelector = ({
               className="py-2 px-3 text-sm hover:bg-gray-50 rounded-md cursor-pointer flex flex-col"
               onClick={() => handleVariableSelect(variable.name)}
             >
-              <span className="font-medium text-blue-600">{variable.name}</span>
+              <span className={cn("font-medium", 
+                variable.name.startsWith("task.") ? "text-blue-600" :
+                variable.name.startsWith("current_user.") || variable.name.startsWith("trigger.user.") ? "text-purple-600" :
+                variable.name.startsWith("project.") ? "text-green-600" :
+                variable.name.startsWith("trigger.") ? "text-orange-600" :
+                "text-gray-600"
+              )}>
+                {variable.name}
+              </span>
               <span className="text-xs text-gray-500 mt-0.5">{variable.description}</span>
             </div>
           ))

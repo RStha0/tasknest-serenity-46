@@ -39,6 +39,7 @@ export const getAvailableVariables = () => {
     { name: "task.priority", description: "The priority level of the task" },
     { name: "task.assignee", description: "The person assigned to the task" },
     { name: "task.due_date", description: "The due date of the task" },
+    { name: "task.story_points", description: "The story points assigned to the task" },
     { name: "task.created_at", description: "When the task was created" },
     { name: "task.updated_at", description: "When the task was last updated" },
     
@@ -51,6 +52,17 @@ export const getAvailableVariables = () => {
     { name: "current_user.name", description: "The name of the current user" },
     { name: "current_user.email", description: "The email of the current user" },
     { name: "current_user.role", description: "The role of the current user" },
+    
+    // Trigger variables
+    { name: "trigger.user.name", description: "Name of the user who triggered the workflow" },
+    { name: "trigger.user.email", description: "Email of the user who triggered the workflow" },
+    { name: "trigger.user.role", description: "Role of the user who triggered the workflow" },
+    { name: "trigger.timestamp", description: "When the workflow was triggered" },
+    
+    // Custom variables (example)
+    { name: "variables.approval_threshold", description: "Custom approval threshold" },
+    { name: "variables.team_capacity", description: "Current team capacity" },
+    { name: "variables.priority_factor", description: "Custom priority calculation factor" },
   ];
 };
 
@@ -70,6 +82,8 @@ export const fetchOptionsForField = async (fieldType: string): Promise<string[]>
       return ["John Doe", "Jane Smith", "Alex Johnson", "Sam Wilson"];
     case "team":
       return ["Engineering", "Design", "Marketing", "Sales", "Support"];
+    case "story_points":
+      return ["1", "2", "3", "5", "8", "13"];
     default:
       return [];
   }
