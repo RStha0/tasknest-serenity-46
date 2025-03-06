@@ -1,4 +1,3 @@
-
 // Helper functions for dynamic form rendering and validation
 
 // Function to check if a string contains a variable expression {{var}}
@@ -82,47 +81,16 @@ export const addCustomVariable = (variable: Variable): void => {
   saveCustomVariablesToStorage(customVars);
 };
 
-// Save or update a custom variable
-export const saveCustomVariable = (name: string, value: string, type: string, editIndex: number | null): void => {
-  const fullName = name.startsWith('variables.') ? name : `variables.${name}`;
+// Delete a custom variable by name
+export const removeCustomVariable = (variableName: string): void => {
   const customVars = loadCustomVariablesFromStorage();
+  const filteredVars = customVars.filter(v => v.name !== variableName);
   
-  if (editIndex !== null) {
-    // Update existing variable
-    customVars[editIndex] = { 
-      name: fullName, 
-      value, 
-      type,
-      description: `Custom variable: ${name}`
-    };
-  } else {
-    // Check if variable already exists
-    if (customVars.some(v => v.name === fullName)) {
-      throw new Error(`Variable ${fullName} already exists`);
-    }
-    
-    // Add new variable
-    customVars.push({ 
-      name: fullName, 
-      value, 
-      type,
-      description: `Custom variable: ${name}`
-    });
+  if (filteredVars.length === customVars.length) {
+    throw new Error(`Variable ${variableName} not found`);
   }
   
-  saveCustomVariablesToStorage(customVars);
-};
-
-// Delete a custom variable by index
-export const deleteCustomVariable = (index: number): void => {
-  const customVars = loadCustomVariablesFromStorage();
-  
-  if (index < 0 || index >= customVars.length) {
-    throw new Error(`Invalid variable index: ${index}`);
-  }
-  
-  customVars.splice(index, 1);
-  saveCustomVariablesToStorage(customVars);
+  saveCustomVariablesToStorage(filteredVars);
 };
 
 // Update an existing custom variable
@@ -136,18 +104,6 @@ export const updateCustomVariable = (variableName: string, updatedVariable: Vari
   
   customVars[index] = updatedVariable;
   saveCustomVariablesToStorage(customVars);
-};
-
-// Remove a custom variable
-export const removeCustomVariable = (variableName: string): void => {
-  const customVars = loadCustomVariablesFromStorage();
-  const filteredVars = customVars.filter(v => v.name !== variableName);
-  
-  if (filteredVars.length === customVars.length) {
-    throw new Error(`Variable ${variableName} not found`);
-  }
-  
-  saveCustomVariablesToStorage(filteredVars);
 };
 
 // Available variables in the system for autocomplete

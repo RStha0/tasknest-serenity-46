@@ -17,8 +17,8 @@ import { Input } from "@/components/ui/input";
 import { 
   getAvailableVariables, 
   getCustomVariables, 
-  addCustomVariable as saveCustomVariable, 
-  removeCustomVariable as deleteCustomVariable,
+  addCustomVariable, 
+  removeCustomVariable,
   Variable
 } from '@/utils/formUtils';
 import { cn } from '@/lib/utils';
@@ -106,7 +106,22 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
     }
 
     try {
-      saveCustomVariable(newVarName, newVarValue, newVarType, editingIndex !== null ? editingIndex : undefined);
+      // Create a variable object with the correct format
+      const variable: Variable = {
+        name: `variables.${newVarName}`,
+        value: newVarValue,
+        type: newVarType,
+        description: `Custom variable: ${newVarName}`
+      };
+      
+      // If editing, remove the old variable first
+      if (editingIndex !== null) {
+        const oldVariable = customVariables[editingIndex];
+        removeCustomVariable(oldVariable.name);
+      }
+      
+      // Add the new/updated variable
+      addCustomVariable(variable);
       
       // Refresh custom variables
       const customVars = getCustomVariables();
@@ -134,7 +149,8 @@ const CustomVariablesModal = ({ open, onOpenChange }: CustomVariablesModalProps)
 
   const handleDeleteVariable = (index: number) => {
     try {
-      deleteCustomVariable(index);
+      const variableName = customVariables[index].name;
+      removeCustomVariable(variableName);
       
       // Refresh custom variables
       const customVars = getCustomVariables();
