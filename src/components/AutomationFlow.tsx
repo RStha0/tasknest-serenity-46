@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from 'react';
 import {
   ReactFlow,
@@ -25,7 +24,6 @@ import { toast } from 'sonner';
 import CustomVariablesModal from './common/CustomVariablesModal';
 import { LucideVariable } from 'lucide-react';
 
-// Register custom node types
 const nodeTypes = {
   trigger: TriggerNode,
   action: ActionNode,
@@ -38,21 +36,16 @@ export const AutomationFlow = () => {
   const [selectedElements, setSelectedElements] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   const [customVariablesModalOpen, setCustomVariablesModalOpen] = useState(false);
   
-  // Handle new connections between nodes
   const onConnect = useCallback((params: Connection) => {
-    // Find all existing edges connected to the source and target
     const targetIncomingEdges = edges.filter(e => e.target === params.target);
     const sourceOutgoingEdges = edges.filter(e => 
       e.source === params.source && 
-      // For condition nodes, we need to check if the sourceHandle is the same
       (params.sourceHandle ? e.sourceHandle === params.sourceHandle : true)
     );
     
-    // Get source node type to check if it's a condition node
     const sourceNode = nodes.find(node => node.id === params.source);
     const isConditionNode = sourceNode?.type === 'condition';
     
-    // Rule 1: Node can only have one incoming connection
     if (targetIncomingEdges.length > 0) {
       toast.error("Target node already has an incoming connection", {
         description: "Remove the existing connection first.",
@@ -61,7 +54,6 @@ export const AutomationFlow = () => {
       return;
     }
     
-    // Rule 2: Non-condition nodes can only have one outgoing connection
     if (!isConditionNode && sourceOutgoingEdges.length > 0) {
       toast.error("Source node already has an outgoing connection", {
         description: "Remove the existing connection first.",
@@ -70,12 +62,10 @@ export const AutomationFlow = () => {
       return;
     }
     
-    // Rule 3: Condition nodes can have two outgoing connections (true/false)
     if (isConditionNode) {
       const existingTrueEdge = edges.find(e => e.source === params.source && e.sourceHandle === 'true');
       const existingFalseEdge = edges.find(e => e.source === params.source && e.sourceHandle === 'false');
       
-      // Check if we're trying to connect to a handle that already has a connection
       if (params.sourceHandle === 'true' && existingTrueEdge) {
         toast.error("True path already connected", {
           description: "Remove the existing connection first.",
@@ -93,10 +83,8 @@ export const AutomationFlow = () => {
       }
     }
     
-    // If all checks pass, add the edge with appropriate styling
     let edgeStyle = { stroke: '#A9ADC1', strokeWidth: 1.5 };
     
-    // Use different colors for condition node edges
     if (isConditionNode && params.sourceHandle) {
       if (params.sourceHandle === 'true') {
         edgeStyle = { stroke: '#22C55E', strokeWidth: 1.5 };
@@ -121,12 +109,10 @@ export const AutomationFlow = () => {
     );
   }, [edges, nodes, setEdges]);
 
-  // Track selected elements
   const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
     setSelectedElements({ nodes, edges });
   }, []);
 
-  // Delete selected elements
   const deleteSelectedElements = useCallback(() => {
     const triggerNodesToDelete = selectedElements.nodes.filter(node => node.type === 'trigger');
     
@@ -145,7 +131,6 @@ export const AutomationFlow = () => {
     }
   }, [selectedElements, setNodes, setEdges]);
 
-  // Handle keyboard shortcuts
   const onKeyDown = useCallback((event: React.KeyboardEvent) => {
     if ((event.key === 'Delete' || event.key === 'Backspace') && 
         (selectedElements.nodes.length > 0 || selectedElements.edges.length > 0)) {
@@ -154,7 +139,6 @@ export const AutomationFlow = () => {
     }
   }, [selectedElements, deleteSelectedElements]);
 
-  // Add a new node to the graph
   const addNode = (type: string) => {
     const newNode = {
       id: `node_${nodes.length + 1}`,
@@ -171,7 +155,6 @@ export const AutomationFlow = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
-  // Update node data when changed by node components
   const updateNodeData = (nodeId: string, newData: any) => {
     setNodes((nds) => 
       nds.map((node) => {
@@ -238,10 +221,10 @@ export const AutomationFlow = () => {
             
             <button
               onClick={() => setCustomVariablesModalOpen(true)}
-              className="px-3 py-2 flex items-center gap-1.5 bg-[#F0F9FF] border border-[#B8E3FF] text-[#0089D6] rounded-md text-sm font-medium hover:bg-[#B8E3FF] transition-colors mt-2"
+              className="px-3 py-2 flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 text-indigo-600 rounded-md text-sm font-medium hover:bg-gradient-to-r hover:from-indigo-100 hover:to-blue-100 transition-colors mt-2 shadow-sm"
             >
               <LucideVariable size={14} />
-              <span>Custom Variables</span>
+              <span>Variables Library</span>
             </button>
             
             {selectedElements.nodes.length > 0 || selectedElements.edges.length > 0 ? (
@@ -256,7 +239,6 @@ export const AutomationFlow = () => {
         </Panel>
       </ReactFlow>
       
-      {/* Custom Variables Modal */}
       <CustomVariablesModal 
         open={customVariablesModalOpen}
         onOpenChange={setCustomVariablesModalOpen}
