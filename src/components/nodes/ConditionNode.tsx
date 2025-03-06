@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucideGitBranch, LucideLoader2 } from 'lucide-react';
 import DynamicInput from '../common/DynamicInput';
-import { fetchOptionsForField, validateField, getAvailableVariables } from '@/utils/formUtils';
+import { fetchOptionsForField, validateField, getVariableType } from '@/utils/formUtils';
 
 const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => {
   // State for the condition configuration
@@ -14,6 +14,7 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [fieldOptions, setFieldOptions] = useState<Array<{value: string, label: string}>>([]);
+  const [leftOperandType, setLeftOperandType] = useState('');
   
   // Available condition fields
   const conditionFields = [
@@ -31,7 +32,10 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
       return [{ value: 'evaluates_to', label: 'Evaluates to' }];
     }
     
-    if (conditionField === 'due_date') {
+    // Determine operators based on the data type of left operand
+    const varType = leftOperandType || getVariableType(leftOperand);
+    
+    if (varType === 'date' || conditionField === 'due_date') {
       return [
         { value: 'before', label: 'Is before' },
         { value: 'after', label: 'Is after' },
@@ -39,6 +43,35 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
       ];
     }
     
+    if (varType === 'number') {
+      return [
+        { value: 'equals', label: 'Equals' },
+        { value: 'not_equals', label: 'Does not equal' },
+        { value: 'greater_than', label: 'Greater than' },
+        { value: 'less_than', label: 'Less than' },
+        { value: 'greater_than_or_equals', label: 'Greater than or equals' },
+        { value: 'less_than_or_equals', label: 'Less than or equals' }
+      ];
+    }
+    
+    if (varType === 'text' || varType === 'email') {
+      return [
+        { value: 'equals', label: 'Equals' },
+        { value: 'not_equals', label: 'Does not equal' },
+        { value: 'contains', label: 'Contains' },
+        { value: 'starts_with', label: 'Starts with' },
+        { value: 'ends_with', label: 'Ends with' }
+      ];
+    }
+    
+    if (varType === 'status' || varType === 'priority' || varType === 'assignee' || varType === 'team') {
+      return [
+        { value: 'equals', label: 'Equals' },
+        { value: 'not_equals', label: 'Does not equal' }
+      ];
+    }
+    
+    // Default operators
     return [
       { value: 'equals', label: 'Equals' },
       { value: 'not_equals', label: 'Does not equal' },
@@ -49,6 +82,19 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
       { value: 'ends_with', label: 'Ends with' }
     ];
   };
+  
+  // Update left operand type when it changes
+  useEffect(() => {
+    if (leftOperand) {
+      const type = getVariableType(leftOperand);
+      setLeftOperandType(type);
+      
+      // Reset right operand when left operand type changes
+      if (type !== leftOperandType) {
+        setRightOperand('');
+      }
+    }
+  }, [leftOperand]);
   
   // Load field options
   useEffect(() => {
@@ -128,6 +174,18 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
     setErrors({});
   };
   
+  // Determine right operand input type based on left operand
+  const getRightOperandInputType = () => {
+    if (!leftOperand) return "text";
+    
+    const varType = getVariableType(leftOperand);
+    if (varType === 'status' || varType === 'priority' || varType === 'assignee' || varType === 'team') {
+      return "select";
+    }
+    
+    return "text";
+  };
+  
   const operators = getOperators();
   
   return (
@@ -192,10 +250,12 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
               label="Right side (value to compare against)"
               value={rightOperand}
               onChange={setRightOperand}
-              inputType="text"
+              inputType={getRightOperandInputType()}
               error={errors.rightOperand}
               supportExpressions={true}
               placeholder="Static value or variable"
+              compatibleWith={leftOperand}
+              isRightOperand={true}
             />
           </>
         ) : (
@@ -227,6 +287,8 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
                 options={fieldOptions}
                 error={errors.rightOperand}
                 supportExpressions={true}
+                compatibleWith={leftOperand}
+                isRightOperand={true}
               />
             )}
           </>

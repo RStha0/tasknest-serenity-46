@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { getAvailableVariables } from "@/utils/formUtils";
+import { getAvailableVariables, getCompatibleVariables, getVariableType } from "@/utils/formUtils";
 import { cn } from "@/lib/utils";
 
 interface VariableSelectorProps {
@@ -11,6 +11,7 @@ interface VariableSelectorProps {
   filterType?: string;
   searchTerm?: string;
   setSearchTerm?: (term: string) => void;
+  compatibleWith?: string; // New prop for compatibility filtering
 }
 
 export const VariableSelector = ({ 
@@ -20,7 +21,8 @@ export const VariableSelector = ({
   anchorPosition = { x: 0, y: 0 },
   filterType = "",
   searchTerm = "",
-  setSearchTerm
+  setSearchTerm,
+  compatibleWith
 }: VariableSelectorProps) => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [variables, setVariables] = useState(getAvailableVariables());
@@ -39,9 +41,11 @@ export const VariableSelector = ({
     }
   }, [isOpen]);
   
-  // Filter variables based on search term and type
+  // Filter variables based on search term, type, and compatibility
   useEffect(() => {
-    let filteredVars = getAvailableVariables();
+    let filteredVars = compatibleWith 
+      ? getCompatibleVariables(compatibleWith) 
+      : getAvailableVariables();
     
     // Apply type filter if provided
     if (filterType) {
@@ -68,7 +72,7 @@ export const VariableSelector = ({
     }
     
     setVariables(filteredVars);
-  }, [localSearchTerm, filterType]);
+  }, [localSearchTerm, filterType, compatibleWith]);
   
   // Handle click outside to close
   useEffect(() => {
@@ -129,7 +133,13 @@ export const VariableSelector = ({
         />
       </div>
       
-      {filterType === "" && (
+      {compatibleWith ? (
+        <div className="p-2 border-b border-gray-100">
+          <div className="text-xs font-medium text-gray-500">
+            Showing variables compatible with <span className="text-blue-600">{compatibleWith}</span>
+          </div>
+        </div>
+      ) : filterType === "" && (
         <div className="flex flex-wrap gap-1 p-2 border-b border-gray-100">
           <button 
             className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
@@ -186,6 +196,11 @@ export const VariableSelector = ({
                 {variable.name}
               </span>
               <span className="text-xs text-gray-500 mt-0.5">{variable.description}</span>
+              {variable.type && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded mt-1 inline-block w-fit">
+                  {variable.type}
+                </span>
+              )}
             </div>
           ))
         )}

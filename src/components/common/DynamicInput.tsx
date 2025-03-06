@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { LucideVariable } from "lucide-react";
-import { containsExpression, validateExpression } from "@/utils/formUtils";
+import { containsExpression, validateExpression, getCompatibleOptions, getVariableType } from "@/utils/formUtils";
 import VariableSelector from "./VariableSelector";
 
 interface DynamicInputProps {
@@ -14,6 +14,8 @@ interface DynamicInputProps {
   inputType?: "text" | "textarea" | "select";
   options?: Array<{ value: string; label: string }>;
   error?: string | null;
+  compatibleWith?: string; // New prop to know what type this input should be compatible with
+  isRightOperand?: boolean; // Whether this is the right side of a comparison
 }
 
 const DynamicInput = ({
@@ -26,12 +28,40 @@ const DynamicInput = ({
   inputType = "text",
   options = [],
   error = null,
+  compatibleWith,
+  isRightOperand = false,
 }: DynamicInputProps) => {
   const [showVariableSelector, setShowVariableSelector] = useState(false);
   const [anchorPosition, setAnchorPosition] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [dynamicOptions, setDynamicOptions] = useState(options);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  // Load compatible options when used as right operand
+  useEffect(() => {
+    if (isRightOperand && compatibleWith) {
+      const fetchOptions = async () => {
+        const compatOptions = await getCompatibleOptions(compatibleWith);
+        if (compatOptions.length > 0) {
+          setDynamicOptions(compatOptions);
+        }
+      };
+      
+      fetchOptions();
+    }
+  }, [compatibleWith, isRightOperand]);
+  
+  // Determine input type based on compatibility
+  useEffect(() => {
+    if (isRightOperand && compatibleWith) {
+      const varType = getVariableType(compatibleWith);
+      if (varType === 'status' || varType === 'priority' || varType === 'assignee') {
+        // Automatically switch to select for certain types
+        inputType = "select";
+      }
+    }
+  }, [compatibleWith, isRightOperand]);
   
   const handleVariableButtonClick = (e: React.MouseEvent) => {
     if (inputRef.current) {
@@ -118,9 +148,10 @@ const DynamicInput = ({
             } ${!isValidExpression ? 'border-red-400' : ''} ${
               error ? 'border-red-400' : ''
             }`}
+            onFocus={handleInputFocus}
           >
             <option value="">Select an option</option>
-            {options.map((option) => (
+            {dynamicOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -190,6 +221,7 @@ const DynamicInput = ({
         anchorPosition={anchorPosition}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        compatibleWith={compatibleWith} // Pass compatibility info to variable selector
       />
     </div>
   );
