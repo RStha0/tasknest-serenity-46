@@ -131,6 +131,7 @@ export const VariableSelector = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, variables, highlightedIndex]);
   
+  // Handle wheel events to prevent zooming on parent
   const handleWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
   };
