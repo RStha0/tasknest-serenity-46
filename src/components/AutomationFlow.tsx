@@ -1,3 +1,4 @@
+
 import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -11,7 +12,6 @@ import {
   Connection,
   Edge,
   MarkerType,
-  NodeChange,
   Node,
   getConnectedEdges,
 } from '@xyflow/react';
@@ -23,6 +23,32 @@ import ConditionNode from './nodes/ConditionNode';
 import { toast } from 'sonner';
 import CustomVariablesModal from './common/CustomVariablesModal';
 import { LucideVariable } from 'lucide-react';
+
+// Define types for node data
+interface BaseNodeData {
+  label: string;
+  onDataChange?: (newData: any) => void;
+}
+
+interface TriggerNodeData extends BaseNodeData {
+  triggerType: string;
+  conditionField?: string;
+  conditionValue?: string;
+}
+
+interface ActionNodeData extends BaseNodeData {
+  actionType: string;
+  formFields: Record<string, any>;
+}
+
+interface ConditionNodeData extends BaseNodeData {
+  conditionField: string;
+  operator: string;
+  leftOperand: string;
+  rightOperand: string;
+}
+
+type NodeData = TriggerNodeData | ActionNodeData | ConditionNodeData;
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -154,28 +180,30 @@ export const AutomationFlow = ({ onFlowChange }) => {
   }, [selectedElements, deleteSelectedElements]);
 
   const addNode = (type: string) => {
-    let initialData = { 
-      label: type.charAt(0).toUpperCase() + type.slice(1),
-    };
+    let initialData: NodeData;
     
     if (type === 'trigger') {
       initialData = {
-        ...initialData,
+        label: 'Trigger',
         triggerType: 'task-created',
       };
     } else if (type === 'action') {
       initialData = {
-        ...initialData,
+        label: 'Action',
         actionType: 'notification',
         formFields: {},
       };
     } else if (type === 'condition') {
       initialData = {
-        ...initialData,
+        label: 'Condition',
         conditionField: 'variable',
         operator: 'equals',
         leftOperand: '',
         rightOperand: '',
+      };
+    } else {
+      initialData = {
+        label: type.charAt(0).toUpperCase() + type.slice(1),
       };
     }
     

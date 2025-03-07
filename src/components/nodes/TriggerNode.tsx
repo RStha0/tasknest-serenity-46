@@ -1,8 +1,20 @@
+
 import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucideCircleDot } from 'lucide-react';
 
-const TriggerNode = ({ data, selected }: { data: any; selected: boolean }) => {
+interface TriggerNodeProps {
+  data: {
+    triggerType?: string;
+    conditionField?: string;
+    conditionValue?: string;
+    label?: string;
+    onDataChange?: (newData: any) => void;
+  };
+  selected: boolean;
+}
+
+const TriggerNode = ({ data, selected }: TriggerNodeProps) => {
   const [triggerType, setTriggerType] = useState(data.triggerType || 'task-created');
   const [showConditions, setShowConditions] = useState(triggerType === 'task-updated');
   const [conditionField, setConditionField] = useState(data.conditionField || 'status');
