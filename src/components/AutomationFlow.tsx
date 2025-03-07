@@ -1,4 +1,3 @@
-
 import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -48,7 +47,8 @@ interface ConditionNodeData extends BaseNodeData {
   rightOperand: string;
 }
 
-type NodeData = TriggerNodeData | ActionNodeData | ConditionNodeData;
+// Allow NodeData to be either one of the specific node types OR just a base node with a label
+type NodeData = TriggerNodeData | ActionNodeData | ConditionNodeData | BaseNodeData;
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -140,7 +140,7 @@ export const AutomationFlow = ({ onFlowChange }) => {
       }, eds)
     );
   }, [edges, nodes, setEdges]);
-
+  
   const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
     setSelectedElements({ nodes, edges });
   }, []);
