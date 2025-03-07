@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { getAvailableVariables, getCompatibleVariables, getVariableType } from "@/utils/formUtils";
 import { cn } from "@/lib/utils";
@@ -33,7 +32,6 @@ export const VariableSelector = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const highlightedRef = useRef<HTMLDivElement>(null);
   
-  // Filter variables based on search term and other criteria
   useEffect(() => {
     let filteredVars = compatibleWith 
       ? getCompatibleVariables(compatibleWith) 
@@ -65,7 +63,6 @@ export const VariableSelector = ({
     setHighlightedIndex(0);
   }, [searchTerm, filterType, compatibleWith]);
   
-  // Scroll highlighted item into view
   useEffect(() => {
     if (highlightedRef.current && containerRef.current) {
       highlightedRef.current.scrollIntoView({
@@ -75,11 +72,9 @@ export const VariableSelector = ({
     }
   }, [highlightedIndex]);
   
-  // Close selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        // Check if we're clicking on the input or variable button
         if (!event.target || (
             !(event.target as HTMLElement).closest('input') &&
             !(event.target as HTMLElement).closest('button')
@@ -98,7 +93,6 @@ export const VariableSelector = ({
     };
   }, [isOpen, onClose]);
   
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -131,9 +125,9 @@ export const VariableSelector = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, variables, highlightedIndex]);
   
-  // Handle wheel events to prevent zooming on parent
   const handleWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
+    e.preventDefault = false;
   };
 
   if (!isOpen) return null;
@@ -142,13 +136,10 @@ export const VariableSelector = ({
     onSelect(`{{${variable}}}`);
   };
   
-  // Determine if we should show category filters
   const showCategoryFilters = !compatibleWith && filterType === "";
   
-  // Determine width based on inline mode
   const selectorWidth = inline ? '100%' : '300px';
   
-  // Position the selector properly
   const style = inline ? {
     position: 'absolute',
     left: '0',
@@ -232,6 +223,7 @@ export const VariableSelector = ({
               )}
               onClick={() => handleVariableSelect(variable.name)}
               onMouseOver={() => setHighlightedIndex(index)}
+              onWheel={handleWheel}
             >
               <span className={cn("font-medium", 
                 variable.name.startsWith("task.") ? "text-blue-600" :
