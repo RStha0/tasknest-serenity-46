@@ -1,5 +1,5 @@
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -31,11 +31,18 @@ const nodeTypes = {
   condition: ConditionNode,
 };
 
-export const AutomationFlow = () => {
+export const AutomationFlow = ({ onFlowChange }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedElements, setSelectedElements] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   const [customVariablesModalOpen, setCustomVariablesModalOpen] = useState(false);
+  
+  // Call the onFlowChange callback whenever nodes or edges change
+  useEffect(() => {
+    if (onFlowChange) {
+      onFlowChange({ nodes, edges });
+    }
+  }, [nodes, edges, onFlowChange]);
   
   const onConnect = useCallback((params: Connection) => {
     const targetIncomingEdges = edges.filter(e => e.target === params.target);
