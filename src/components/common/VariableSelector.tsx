@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { getAvailableVariables, getCompatibleVariables, getVariableType } from "@/utils/formUtils";
 import { cn } from "@/lib/utils";
@@ -10,7 +11,9 @@ interface VariableSelectorProps {
   filterType?: string;
   searchTerm?: string;
   setSearchTerm?: (term: string) => void;
-  compatibleWith?: string; // New prop for compatibility filtering
+  compatibleWith?: string; // For compatibility filtering
+  inputValue?: string; // Current value of the input
+  inline?: boolean; // Whether to show as inline with the input
 }
 
 export const VariableSelector = ({ 
@@ -21,23 +24,16 @@ export const VariableSelector = ({
   filterType = "",
   searchTerm = "",
   setSearchTerm,
-  compatibleWith
+  compatibleWith,
+  inputValue = "",
+  inline = false
 }: VariableSelectorProps) => {
-  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [variables, setVariables] = useState(getAvailableVariables());
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const highlightedRef = useRef<HTMLDivElement>(null);
   
-  useEffect(() => {
-    setLocalSearchTerm(searchTerm);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
-  
+  // Filter variables based on search term and other criteria
   useEffect(() => {
     let filteredVars = compatibleWith 
       ? getCompatibleVariables(compatibleWith) 
@@ -57,21 +53,39 @@ export const VariableSelector = ({
       }
     }
     
-    const searchString = localSearchTerm.trim().toLowerCase();
-    if (searchString !== "") {
+    const searchString = (searchTerm || "").trim().toLowerCase();
+    if (searchString) {
       filteredVars = filteredVars.filter(v => 
         v.name.toLowerCase().includes(searchString) || 
-        v.description.toLowerCase().includes(searchString)
+        (v.description && v.description.toLowerCase().includes(searchString))
       );
     }
     
     setVariables(filteredVars);
-  }, [localSearchTerm, filterType, compatibleWith]);
+    setHighlightedIndex(0);
+  }, [searchTerm, filterType, compatibleWith]);
   
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedRef.current && containerRef.current) {
+      highlightedRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [highlightedIndex]);
+  
+  // Close selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        onClose();
+        // Check if we're clicking on the input or variable button
+        if (!event.target || (
+            !(event.target as HTMLElement).closest('input') &&
+            !(event.target as HTMLElement).closest('button')
+          )) {
+          onClose();
+        }
       }
     };
     
@@ -83,91 +97,118 @@ export const VariableSelector = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, onClose]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalSearchTerm(newValue);
-    if (setSearchTerm) {
-      setSearchTerm(newValue);
-    }
-  };
-
+  
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setHighlightedIndex(prev => 
+            prev < variables.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (variables[highlightedIndex]) {
+            handleVariableSelect(variables[highlightedIndex].name);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          onClose();
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, variables, highlightedIndex]);
+  
   const handleWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
-    e.preventDefault();
   };
 
   if (!isOpen) return null;
   
   const handleVariableSelect = (variable: string) => {
     onSelect(`{{${variable}}}`);
-    onClose();
   };
-
-  const style = {
+  
+  // Determine if we should show category filters
+  const showCategoryFilters = !compatibleWith && filterType === "";
+  
+  // Determine width based on inline mode
+  const selectorWidth = inline ? '100%' : '300px';
+  
+  // Position the selector properly
+  const style = inline ? {
     position: 'absolute',
-    left: `0px`,
-    top: `calc(100% + 5px)`,
-    width: '300px',
+    left: '0',
+    top: 'calc(100% + 1px)',
+    width: selectorWidth,
+    zIndex: 1000,
+  } as React.CSSProperties : {
+    position: 'absolute',
+    left: `${anchorPosition.x}px`,
+    top: `${anchorPosition.y}px`,
+    width: selectorWidth,
     zIndex: 1000,
   } as React.CSSProperties;
 
   return (
     <div 
       ref={containerRef}
-      className="bg-white rounded-lg shadow-lg border border-gray-200 w-[300px]"
+      className="bg-white rounded-md shadow-lg border border-gray-200 variable-selector"
       style={style}
       onWheel={handleWheel}
     >
-      <div className="p-2 border-b border-gray-100">
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Search variables..."
-          className="w-full px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          value={localSearchTerm}
-          onChange={handleSearchChange}
-        />
-      </div>
-      
-      {compatibleWith ? (
-        <div className="p-2 border-b border-gray-100">
-          <div className="text-xs font-medium text-gray-500">
-            Showing variables compatible with <span className="text-blue-600">{compatibleWith}</span>
-          </div>
-        </div>
-      ) : filterType === "" && (
+      {showCategoryFilters && (
         <div className="flex flex-wrap gap-1 p-2 border-b border-gray-100">
           <button 
             className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
-            onClick={() => setLocalSearchTerm("task")}
+            onClick={() => setSearchTerm?.("task")}
           >
             Task
           </button>
           <button 
             className="px-2 py-1 text-xs bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100"
-            onClick={() => setLocalSearchTerm("user")}
+            onClick={() => setSearchTerm?.("user")}
           >
             User
           </button>
           <button 
             className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded-md hover:bg-green-100"
-            onClick={() => setLocalSearchTerm("project")}
+            onClick={() => setSearchTerm?.("project")}
           >
             Project
           </button>
           <button 
             className="px-2 py-1 text-xs bg-orange-50 text-orange-600 rounded-md hover:bg-orange-100"
-            onClick={() => setLocalSearchTerm("trigger")}
+            onClick={() => setSearchTerm?.("trigger")}
           >
             Trigger
           </button>
           <button 
             className="px-2 py-1 text-xs bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100"
-            onClick={() => setLocalSearchTerm("variables")}
+            onClick={() => setSearchTerm?.("variables")}
           >
             Custom
           </button>
+        </div>
+      )}
+      
+      {compatibleWith && (
+        <div className="p-2 border-b border-gray-100">
+          <div className="text-xs font-medium text-gray-500">
+            Showing variables compatible with <span className="text-blue-600">{compatibleWith}</span>
+          </div>
         </div>
       )}
       
@@ -180,11 +221,16 @@ export const VariableSelector = ({
             No variables match your search
           </div>
         ) : (
-          variables.map((variable) => (
+          variables.map((variable, index) => (
             <div
               key={variable.name}
-              className="py-2 px-3 text-sm hover:bg-gray-50 rounded-md cursor-pointer flex flex-col"
+              ref={index === highlightedIndex ? highlightedRef : null}
+              className={cn(
+                "py-2 px-3 text-sm rounded-md cursor-pointer flex flex-col",
+                index === highlightedIndex ? "bg-blue-50" : "hover:bg-gray-50"
+              )}
               onClick={() => handleVariableSelect(variable.name)}
+              onMouseOver={() => setHighlightedIndex(index)}
             >
               <span className={cn("font-medium", 
                 variable.name.startsWith("task.") ? "text-blue-600" :
