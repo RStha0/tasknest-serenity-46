@@ -1,4 +1,3 @@
-
 import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
@@ -37,7 +36,6 @@ export const AutomationFlow = ({ onFlowChange }) => {
   const [selectedElements, setSelectedElements] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   const [customVariablesModalOpen, setCustomVariablesModalOpen] = useState(false);
   
-  // Call the onFlowChange callback whenever nodes or edges change
   useEffect(() => {
     if (onFlowChange) {
       onFlowChange({ nodes, edges });
@@ -140,7 +138,6 @@ export const AutomationFlow = ({ onFlowChange }) => {
   }, [selectedElements, setNodes, setEdges]);
 
   const onKeyDown = useCallback((event: React.KeyboardEvent) => {
-    // Don't trigger deletion if the user is typing in an input, textarea, or select element
     if (
       event.target instanceof HTMLInputElement || 
       event.target instanceof HTMLTextAreaElement || 
@@ -157,12 +154,37 @@ export const AutomationFlow = ({ onFlowChange }) => {
   }, [selectedElements, deleteSelectedElements]);
 
   const addNode = (type: string) => {
+    let initialData = { 
+      label: type.charAt(0).toUpperCase() + type.slice(1),
+    };
+    
+    if (type === 'trigger') {
+      initialData = {
+        ...initialData,
+        triggerType: 'task-created',
+      };
+    } else if (type === 'action') {
+      initialData = {
+        ...initialData,
+        actionType: 'notification',
+        formFields: {},
+      };
+    } else if (type === 'condition') {
+      initialData = {
+        ...initialData,
+        conditionField: 'variable',
+        operator: 'equals',
+        leftOperand: '',
+        rightOperand: '',
+      };
+    }
+    
     const newNode = {
       id: `node_${nodes.length + 1}`,
       type,
       position: { x: 250, y: nodes.length * 100 + 50 },
       data: { 
-        label: type.charAt(0).toUpperCase() + type.slice(1),
+        ...initialData,
         onDataChange: (newData: any) => {
           updateNodeData(newNode.id, newData);
         }

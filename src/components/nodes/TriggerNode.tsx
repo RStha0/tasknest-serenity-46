@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucideCircleDot } from 'lucide-react';
 
@@ -9,42 +8,30 @@ const TriggerNode = ({ data, selected }: { data: any; selected: boolean }) => {
   const [conditionField, setConditionField] = useState(data.conditionField || 'status');
   const [conditionValue, setConditionValue] = useState(data.conditionValue || 'completed');
 
+  useEffect(() => {
+    if (data.onDataChange) {
+      data.onDataChange({
+        ...data,
+        triggerType,
+        conditionField,
+        conditionValue,
+        label: `Task ${triggerType.replace('-', ' ')}`,
+      });
+    }
+  }, [triggerType, conditionField, conditionValue, data]);
+
   const handleTriggerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setTriggerType(value);
     setShowConditions(value === 'task-updated');
-    
-    // Update node data to persist changes
-    if (data.onDataChange) {
-      data.onDataChange({
-        ...data,
-        triggerType: value,
-      });
-    }
   };
 
   const handleConditionFieldChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConditionField(e.target.value);
-    
-    // Update node data
-    if (data.onDataChange) {
-      data.onDataChange({
-        ...data,
-        conditionField: e.target.value,
-      });
-    }
   };
 
   const handleConditionValueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setConditionValue(e.target.value);
-    
-    // Update node data
-    if (data.onDataChange) {
-      data.onDataChange({
-        ...data,
-        conditionValue: e.target.value,
-      });
-    }
   };
 
   return (
@@ -127,7 +114,6 @@ const TriggerNode = ({ data, selected }: { data: any; selected: boolean }) => {
       
       <div className="text-xs text-gray-500">This node starts your workflow when the specified task event occurs</div>
       
-      {/* Only output handle for trigger node */}
       <Handle
         type="source"
         position={Position.Right}

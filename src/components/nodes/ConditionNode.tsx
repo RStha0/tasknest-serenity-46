@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucideGitBranch, LucideLoader2 } from 'lucide-react';
@@ -135,7 +134,7 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
     loadOptions();
   }, [conditionField]);
 
-  // Update node data when form changes
+  // Update node data when any condition property changes
   useEffect(() => {
     if (data.onDataChange) {
       data.onDataChange({
@@ -143,10 +142,49 @@ const ConditionNode = ({ data, selected }: { data: any; selected: boolean }) => 
         conditionField,
         operator,
         leftOperand,
-        rightOperand
+        rightOperand,
+        label: getConditionLabel(),
       });
     }
-  }, [conditionField, operator, leftOperand, rightOperand, data]);
+  }, [conditionField, operator, leftOperand, rightOperand]);
+  
+  // Create a descriptive label for the condition
+  const getConditionLabel = () => {
+    if (conditionField === 'custom_expression') {
+      return 'Custom Expression';
+    }
+    
+    if (conditionField === 'variable' && leftOperand) {
+      const shortLeft = leftOperand.length > 10 ? 
+        leftOperand.substring(0, 10) + '...' : leftOperand;
+      const shortRight = rightOperand.length > 10 ? 
+        rightOperand.substring(0, 10) + '...' : rightOperand;
+        
+      return `${shortLeft} ${operatorToSymbol(operator)} ${shortRight}`;
+    }
+    
+    return conditionField.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+  
+  // Convert operator to symbol for display
+  const operatorToSymbol = (op: string) => {
+    switch (op) {
+      case 'equals': return '=';
+      case 'not_equals': return '≠';
+      case 'greater_than': return '>';
+      case 'less_than': return '<';
+      case 'greater_than_or_equals': return '≥';
+      case 'less_than_or_equals': return '≤';
+      case 'contains': return 'contains';
+      case 'starts_with': return 'starts with';
+      case 'ends_with': return 'ends with';
+      case 'before': return 'before';
+      case 'after': return 'after';
+      case 'on': return 'on';
+      default: return op;
+    }
+  };
   
   // Validate the condition
   const validateCondition = () => {

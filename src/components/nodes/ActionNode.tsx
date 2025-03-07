@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { LucidePlayCircle, LucideLoader2 } from 'lucide-react';
@@ -61,13 +60,34 @@ const ActionNode = ({ data, selected }: { data: any; selected: boolean }) => {
   // Update node data when form changes
   useEffect(() => {
     if (data.onDataChange) {
+      const actionLabel = getActionLabel();
+      
       data.onDataChange({
         ...data,
         actionType,
         formFields,
+        label: actionLabel,
       });
     }
   }, [actionType, formFields, data]);
+  
+  // Generate a descriptive label based on the action type and form fields
+  const getActionLabel = () => {
+    switch (actionType) {
+      case 'notification':
+        return formFields.subject 
+          ? `Notify: ${formFields.subject.substring(0, 15)}${formFields.subject.length > 15 ? '...' : ''}`
+          : 'Send Notification';
+      case 'task':
+        return formFields.title
+          ? `Task: ${formFields.title.substring(0, 15)}${formFields.title.length > 15 ? '...' : ''}`
+          : 'Create Task';
+      case 'status':
+        return `Update ${formFields.entity || 'Status'}`;
+      default:
+        return 'Perform Action';
+    }
+  };
   
   // Validate form fields
   const validateForm = () => {
